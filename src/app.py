@@ -19,7 +19,7 @@ initial_members = [
     {"id": 3, "first_name": "Jimmy", "age": 5, "lucky_numbers": [1]}
 ]
 
-jackson_family = FamilyStructure("Jackson", initial_members)
+jackson_family = FamilyStructure("Jackson")
 
 
 @app.errorhandler(APIException)
@@ -33,35 +33,49 @@ def sitemap():
 
 @app.route('/members', methods=['GET'])
 def get_all_members():
-    members = jackson_family.get_all_members()
-    return jsonify(members), 200
+    try:
+        members = jackson_family.get_all_members()
+        return jsonify(members), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/member/<int:member_id>', methods=['GET'])
+def get_member(member_id):
+    try:
+        member = jackson_family.get_member(member_id)
+        if member:
+            return jsonify(member), 200
+        else:
+            return jsonify({"error": "Member not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/member', methods=['POST'])
 def add_member():
-    member = request.get_json()
-    if not member:
-        return jsonify({"error": "Missing member data"}), 400
-
-    new_member = jackson_family.add_member(member)
-    return jsonify(new_member), 201
-
-@app.route('/member/<int:id>', methods=['DELETE'])
-def delete_member(id):
-    result = jackson_family.delete_member(id)
-    if result:
-        return jsonify({"done": True}), 200
-    else:
-        return jsonify({"error": "Member not found"}), 404
-
-@app.route('/member/<int:id>', methods=['GET'])
-def get_member(id):
-    member = jackson_family.get_member(id)
-    if member:
+    try:
+        member = request.get_json()
+        if not member:
+            return jsonify({"error": "Invalid input"}), 400
+        
+        jackson_family.add_member(member)
         return jsonify(member), 200
-    else:
-        return jsonify({"error": "Member not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
+@app.route('/member/<int:member_id>', methods=['DELETE'])
+def delete_member(member_id):
+    try:
+        member = jackson_family.get_member(member_id)
+        if not member:
+            return jsonify({"error": "Member not found"}), 404
+        
+        jackson_family.delete_member(member_id)
+        return jsonify({"done": True}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
+if __name__ == '__main__':
+    app.run(debug=True)
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3000))
     app.run(host='0.0.0.0', port=PORT, debug=True)
